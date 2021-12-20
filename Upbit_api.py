@@ -31,7 +31,13 @@
 # 
 #  Macd 상승추세
 
-# In[8]:
+# In[ ]:
+
+
+
+
+
+# In[143]:
 
 
 import pyupbit
@@ -46,9 +52,10 @@ import numpy as np
 import time
 import requests
 
-access_key = "??"
-secret_key = "??"
-myToken = "xoxb"
+access_key = "nlxxS6yGGx8PGsNe37cFWIZZhlGWNIDVe3zc8xSt"
+secret_key = "O7g9Ex98gXvW54didt36FuVsOqzz6VcjcmhMl4Gr"
+myToken = "xoxb-2846839606149-2873522673296-OIwsI45EWpSUg2Iibmri8WOm"
+
 
 
 payload = {
@@ -151,6 +158,10 @@ def stockrsiweeks(symbol):
     stochrsi_K = stochrsi.rolling(smoothK).mean()
     stochrsi_D = stochrsi_K.rolling(smoothD).mean()
 
+    
+    
+    print(symbol)    
+
     condition = False;
     yyester_K=stochrsi_K.iloc[-3]*100
     yyester_D=stochrsi_D.iloc[-3]*100
@@ -219,7 +230,7 @@ def stockrsidays(symbol):
     print('upbit 1day stoch_rsi_D: ', stochrsi_D.iloc[-1]*100)
     print('') '''
 
-    
+    print(symbol)
     condition = False;
     yyester_K=stochrsi_K.iloc[-3]*100
     yyester_D=stochrsi_D.iloc[-3]*100
@@ -279,6 +290,7 @@ def macddays(symbol):
     '''#36 37 38
     #print(macd[0], exp3[0] ," ww ",macd[1], exp3[1], " ww ", macd[2], exp3[2])
     condition = False
+    print(symbol)
     if(macd[2]<macd[1] and macd[1]<macd[0] and macd[0] >exp3[0]):
         condition = True
 
@@ -321,6 +333,7 @@ def macd60m(symbol):
     time.sleep(1)
     '''#36 37 38
     #print(macd[0], exp3[0] ," ww ",macd[1], exp3[1], " ww ", macd[2], exp3[2])
+    print(symbol)
     condition = False
     if((macd[3]-exp3[3])>0 and (macd[3]-exp3[3])<(macd[2]-exp3[2]) and (macd[2]-exp3[2])<(macd[1]-exp3[1]) and 
        (macd[1]-exp3[1])<(macd[0]-exp3[0])):
@@ -366,6 +379,7 @@ def macd30m(symbol):
     '''#36 37 38
     #print(macd[0], exp3[0] ," ww ",macd[1], exp3[1], " ww ", macd[2], exp3[2])
     condition = False
+    print(symbol)
     if((macd[1]-exp3[1])<(macd[0]-exp3[0])):
         condition = True
     #print(macd[0], macd[1], exp3[0], exp3[1])
@@ -405,6 +419,7 @@ def obv(symbol):
     obv = OBV(df['trade_price'],df['candle_acc_trade_volume'])
     #print(obv[3], obv[2],obv[1],obv[0])
     condition= False
+    print(symbol)
     if(obv[2]<obv[1] and obv[1]<obv[0]):
         condition = True
     
@@ -425,10 +440,10 @@ def obv(symbol):
 
 
 
-sell_list = []    # 빈 리스트 생성
+#sell_list = []    # 빈 리스트 생성
 
 post_message(myToken,"#upbit", "autotrade start")
-
+sellmust_list = ["KRW-BTC"]
 # buy = False
 # #print(stockrsidays(coin) ,macddays(coin) ,obv(coin) ,stockrsiweeks(coin) , macd60m(coin),macd30m(coin))
 # if(stockrsidays(symbol) and macddays(symbol) and obv(symbol) and stockrsiweeks(symbol) and macd60m(symbol) and macd30m(symbol)):
@@ -444,10 +459,17 @@ while True:
     try:
 
         for symbol in krw_tickers:
+            
 
             if(float(data[0]['balance'])>300000*1.0005):
+                
+                buy = True
+                for sell in sell_list:
+                    if(sell[0] == symbol):
+                        buy = False
+                        
                 if(stockrsidays(symbol) and macddays(symbol) and obv(symbol) and stockrsiweeks(symbol) and macd60m(symbol) and
-                   macd30m(symbol)):
+                   macd30m(symbol) and buy):
                     buy_result = upbit.buy_market_order(symbol, 300000)
                     forselling = []
                     current_price = pyupbit.get_current_price(symbol)
@@ -463,17 +485,59 @@ while True:
         # 0 이름, 1 구매한 총 가격 300000, 2 구매했을때 코인 가격, 3 구매한 코인 개수
         for coin_selling in sell_list:
             coin_price = pyupbit.get_current_price(coin_selling[0])
+            
+            mustselltime = False
+            for sellmust in sellmust_list:
+                if (sellmust == coin_selling[0]):
+                    mustselltime = True
+                    
+            if(mustselltime):
+                url = "https://api.upbit.com/v1/candles/days?market="+coin_selling[0]+"&count=3"
+                headers = {"Accept": "application/json"}
+                response = requests.request("GET", url, headers=headers)
+                sellcheck=response.json()
 
-            if (coin_selling[2]*1.08 < coin_price):
-                sell_result = upbit.sell_market_order(coin_selling[0], coin_selling[3])
-                post_message(myToken,"#upbit", coin_selling[0]+"coin good sell : " +str(sell_result))
+                mosthigh = sellcheck[0]['high_price']
+
+                if(mosthigh < sellcheck[1]['high_price']):
+                    mosthigh = sellcheck[1]['high_price']
+                    if (mosthigh <sellcheck[2]['high_price']):
+                        mosthigh = sellcheck[2]['high_price']
+            
+                if(mosthigh*0.98 > coin_price):
+                    sell_result = upbit.sell_market_order(coin_selling[0], coin_selling[3])
+                    post_message(myToken,"#upbit", coin_selling[0]+"coin good sell : " +str(sell_result))
+                    for i in range(len(sell_list)):
+                        if(sell_list[i][0] == coin_selling[0]):
+                            del sell_list[i]
+                    for i in range(len(sellmust_list)):
+                        if (sellmust_list[i] == coin_selling[0]):
+                            del sellmust_list[i]
+                    
+                    
+    
+        
+        
+            overlap_test = True
+            for i in sellmust_list:
+                if(i == coin_selling[0]):
+                    overlap_test = False
+                
+            
+            
+            if (coin_selling[2]*1.08 < coin_price and overlap_test):
+                sellmust_list.append(coin_selling[0])
 
             if(coin_selling[2]*0.95 > coin_price):
                 sell_result = upbit.sell_market_order(coin_selling[0], coin_selling[3])
                 post_message(myToken,"#upbit", coin_selling[0]+"coin dead sell : " +str(sell_result))
+                for i in range(len(sell_list)):
+                    if(sell_list[i][0] == coin_selling[0]):
+                        del sell_list[i]
+
+                
+                
         time.sleep(1)
-        print(sell_list)
-        
     except Exception as e:
         print(e)
         post_message(myToken,"#upbit", e)
@@ -482,32 +546,46 @@ while True:
 
 
 
-# In[ ]:
+# In[57]:
 
 
+# symbol = 'KRW-BTC'
+# buy_result = upbit.buy_market_order(symbol, 6000)
+
+# forselling = []
+# current_price = pyupbit.get_current_price(symbol)
+# forselling.append(buy_result['market'])
+# forselling.append(buy_result['price'])
+# forselling.append(current_price)
+# symbol_count = float(float(buy_result['price']) / current_price)
+# forselling.append(symbol_count)
+
+# sell_list.append(forselling)
+
+# print(sell_list)
+# post_message(myToken,"#upbit", symbol+"coin buy : " +str(buy_result))
 
 
-
-# In[5]:
-
+# In[134]:
 
 
+# sell_list = []
 
 
-# In[7]:
+# In[135]:
 
 
+# forselling = []
+# forselling.append('KRW-BTC')
+# forselling.append(6000.0)
+# forselling.append(57776000.0)
+# forselling.append(0.00010384934921074494)
+# sell_list.append(forselling)
 
 
-
-# In[6]:
-
+# In[142]:
 
 
-
-
-# In[ ]:
-
-
-
+# print(sell_list)
+# print(sellmust_list)
 
