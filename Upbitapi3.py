@@ -440,10 +440,10 @@ def obv(symbol):
 
 
 
-#sell_list = []    # 빈 리스트 생성
+sell_list = []    # 빈 리스트 생성
 
 post_message(myToken,"#upbit", "autotrade start")
-sellmust_list = ["KRW-BTC"]
+sellmust_list = []
 # buy = False
 # #print(stockrsidays(coin) ,macddays(coin) ,obv(coin) ,stockrsiweeks(coin) , macd60m(coin),macd30m(coin))
 # if(stockrsidays(symbol) and macddays(symbol) and obv(symbol) and stockrsiweeks(symbol) and macd60m(symbol) and macd30m(symbol)):
