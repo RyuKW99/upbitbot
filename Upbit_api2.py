@@ -52,9 +52,9 @@ import numpy as np
 import time
 import requests
 
-access_key = "nlxxS6yGGx8PGsNe37cFWIZZhlGWNIDVe3zc8xSt"
-secret_key = "O7g9Ex98gXvW54didt36FuVsOqzz6VcjcmhMl4Gr"
-myToken = "xoxb-2846839606149-2873522673296-OIwsI45EWpSUg2Iibmri8WOm"
+access_key = "?"
+secret_key = "?"
+myToken = "???"
 
 
 
