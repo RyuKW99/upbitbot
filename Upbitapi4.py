@@ -160,7 +160,6 @@ def stockrsiweeks(symbol):
 
     
     
-    print(symbol)    
 
     condition = False;
     yyester_K=stochrsi_K.iloc[-3]*100
@@ -230,7 +229,6 @@ def stockrsidays(symbol):
     print('upbit 1day stoch_rsi_D: ', stochrsi_D.iloc[-1]*100)
     print('') '''
 
-    print(symbol)
     condition = False;
     yyester_K=stochrsi_K.iloc[-3]*100
     yyester_D=stochrsi_D.iloc[-3]*100
@@ -290,7 +288,6 @@ def macddays(symbol):
     '''#36 37 38
     #print(macd[0], exp3[0] ," ww ",macd[1], exp3[1], " ww ", macd[2], exp3[2])
     condition = False
-    print(symbol)
     if(macd[2]<macd[1] and macd[1]<macd[0] and macd[0] >exp3[0]):
         condition = True
 
@@ -333,7 +330,6 @@ def macd60m(symbol):
     time.sleep(1)
     '''#36 37 38
     #print(macd[0], exp3[0] ," ww ",macd[1], exp3[1], " ww ", macd[2], exp3[2])
-    print(symbol)
     condition = False
     if((macd[3]-exp3[3])>0 and (macd[3]-exp3[3])<(macd[2]-exp3[2]) and (macd[2]-exp3[2])<(macd[1]-exp3[1]) and 
        (macd[1]-exp3[1])<(macd[0]-exp3[0])):
@@ -379,7 +375,6 @@ def macd30m(symbol):
     '''#36 37 38
     #print(macd[0], exp3[0] ," ww ",macd[1], exp3[1], " ww ", macd[2], exp3[2])
     condition = False
-    print(symbol)
     if((macd[1]-exp3[1])<(macd[0]-exp3[0])):
         condition = True
     #print(macd[0], macd[1], exp3[0], exp3[1])
@@ -419,7 +414,6 @@ def obv(symbol):
     obv = OBV(df['trade_price'],df['candle_acc_trade_volume'])
     #print(obv[3], obv[2],obv[1],obv[0])
     condition= False
-    print(symbol)
     if(obv[2]<obv[1] and obv[1]<obv[0]):
         condition = True
     
