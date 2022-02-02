@@ -422,8 +422,9 @@ while True:
                                 for i in range(len(good_sell_list)):
                                     if(good_sell_list[i] == sell_symbol[0]):
                                         contem = i
-                                del good_sell_list[contem]
-                                        
+                                if(contem != 999):
+                                    del buy_list[contem]
+
 
                  
         time.sleep(5)
