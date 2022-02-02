@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-# In[ ]:
+# In[1]:
 
 
 ############################### 모듈 import #####################################
@@ -21,7 +21,7 @@ import datetime
 
 
 ############################### 프로그램 상수 #####################################
-access_key = "???"
+access_key = ""???""
 secret_key = "???"
 myToken = "?"
 
@@ -40,6 +40,8 @@ deadsell_percent = 0.95
 
 
 ################################# 함수 ####################################
+upbit = pyupbit.Upbit(access_key, secret_key) # pyupbit 사용하기 위함
+
 
 #슬랙 message
 def post_message(token, channel, text):
@@ -288,11 +290,16 @@ def buy_test (symbol):
         test = True
     return test
 
-        
+def buy_overlap_test (symbol, buy_list):
+    test = True
+    for i in range(len(buy_list)):
+        if (symbol == buy_list[i][0]):
+            test = False
+    return test
 
 
 ########### 메인 로직 ##############################################
-upbit = pyupbit.Upbit(access_key, secret_key) # pyupbit 사용하기 위함
+
 post_message(myToken,"#upbit", "autotrade start")
 
 #익절의 경우 이틀전종가, 하루전종가, 오늘최고가 기준 -2퍼아래로 떨어졌을 경우 매도.
@@ -316,10 +323,10 @@ while True:
             #매수 조건 만족 시 
             #0 코인명, 1 매수 조건 만족 했을 때 가격, 2 매수 조건이 왔을 때 +12시간
             if(order_done_sorted[0]['side'] == 'ask' or order_done ==[]):
-                if(buy_test(symbol)):
+                if(buy_overlap_test(symbol,buy_list) and buy_test(symbol)):  #buy overlap test를 해준 후 buy_test 실행
                     current_price = pyupbit.get_current_price(symbol)
                     current_time = datetime.datetime.now() 
-                    twelve_hour_later = current_time + datetime.timedelta(hours=12) 
+                    twelve_hour_later = current_time + datetime.timedelta(hours=6) 
                     
                     temp_buy_list = []
                     temp_buy_list.append(symbol)
@@ -343,7 +350,7 @@ while True:
                 temp_list.append(coin_buy_price)
                 temp_list.append(coin_count)
                 sell_list.append(temp_list)
-        print(sell_list)        
+                
         time.sleep(1)
         
         #매수
@@ -361,11 +368,13 @@ while True:
                     buy_result = upbit.buy_market_order(buy[0], invest_money)
                     post_message(myToken,"#upbit", buy[0]+"coin buy : " +str(buy_result))
                     
+                    
+                    contem = 999 #임시 숫자
                     for i in range(len(buy_list)):
                         if(buy_list[i][0] == buy[0]):
-                            del buy_list[i]
-        print(buy_list)        
-        
+                            contem = i
+                    if(contem != 999):
+                        del buy_list[contem]
         #매도
         if(sell_list != []):
             for sell_symbol in sell_list:
@@ -409,17 +418,47 @@ while True:
                                 post_message(myToken,"#upbit", sell_symbol[0]+"coin good sell : " +str(sell_result))
 
                                 #good_sell_list에 있는 코인을 제거해줌
+                                contem = 999
                                 for i in range(len(good_sell_list)):
                                     if(good_sell_list[i] == sell_symbol[0]):
-                                        del good_sell_list[i]
+                                        contem = i
+                                del good_sell_list[contem]
+                                        
+
                  
-        print(good_sell_list)
-        
+        time.sleep(5)
 
     except Exception as e:
         print(e)
-        post_message(myToken,"#upbit", e+"error!!")
+        post_message(myToken,"#upbit", e)
         time.sleep(1)
 
         
+
+
+# In[10]:
+
+
+def buy_overlap_test (symbol, buy_list):
+    test = True
+    for i in range(len(buy_list)):
+        if (symbol == buy_list[i][0]):
+            test = False
+    return test
+sell_list = []
+#0 코인명, 1 매수 조건 만족 했을 때 가격, 2 매수 조건이 왔을 때 +12시간
+temp_list =[]
+temp_list.append("asdf")
+temp_list.append(1234)
+temp_list.append(1.234)
+sell_list.append(temp_list)
+
+temp_list = []
+temp_list.append("asdfg")
+temp_list.append(12345)
+temp_list.append(1.2345)
+sell_list.append(temp_list)
+
+print(buy_overlap_test("asdfg",sell_list))
+print(sell_list)
 
