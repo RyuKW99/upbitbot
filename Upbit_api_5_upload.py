@@ -21,9 +21,9 @@ import datetime
 
 
 ############################### 프로그램 상수 #####################################
-access_key = "111"
-secret_key = "111"
-myToken = "11"
+access_key = ""
+secret_key = ""
+myToken = ""
 
 #투자금액
 invest_money = 450000
@@ -43,9 +43,10 @@ krw_tickers = ['KRW-BTC', 'KRW-ETH', 'KRW-NEO', 'KRW-MTL', 'KRW-LTC', 'KRW-XRP',
 
 
 #익절,손절 퍼센트
-goodsell_percent = 1.07
+goodsell_percent = 1.06
 deadsell_percent = 0.95
-
+buydown_percent = 0.98
+aftergoodsell_percent = 0.985 #goodsell각 이후 1.5퍼 떨어지면 매도
 
 ################################# 함수 ####################################
 upbit = pyupbit.Upbit(access_key, secret_key) # pyupbit 사용하기 위함
@@ -314,7 +315,7 @@ post_message(myToken,"#upbit", "autotrade start")
 good_sell_list = []
 #매수할 때 -2퍼 조정이 왔을 때 매수.
 buy_list = []
-
+wantgood_sell_list = []
 while True:
     sell_list = []
     try:
@@ -323,17 +324,17 @@ while True:
         for symbol in krw_tickers:
             #최근 체결된 코인 정렬
             order_done = upbit.get_order(symbol, state="cancel") +upbit.get_order(symbol, state="done") 
+            
             if ( [] != order_done): #빈 배열이 있을때 오류가 나지않게하기위해서
                 order_done_sorted = sorted(order_done, key=(lambda x: x['created_at']), reverse=True)
-                
             if(order_done == []):
                 order_done_sorted = []
-
+            
+            
             #매수 조건 만족 시 
             #0 코인명, 1 매수 조건 만족 했을 때 가격, 2 매수 조건이 왔을 때 +6시간
             if(order_done ==[] or order_done_sorted[0]['side'] == 'ask' ):
                 if(my_blance>invest_money):
-                    
                     if(buy_overlap_test(symbol,buy_list) and buy_test(symbol)):  #buy overlap test를 해준 후 buy_test 실행
                         current_price = pyupbit.get_current_price(symbol)
                         current_time = datetime.datetime.now() 
@@ -362,12 +363,11 @@ while True:
                     temp_list.append(coin_count)
                     sell_list.append(temp_list)
                 
-        
 
         #매수
         #매수 조건이 온 후 12시간이 지났을 때 매수종목 제거
         # + 조정이 왔을 때 매수
-        if(buy_list != []):
+        if(my_blance>invest_money and buy_list != []):
             current_time = datetime.datetime.now() 
             for i in range(len(buy_list)):
                 if(buy_list[i][2]<current_time):
@@ -375,7 +375,7 @@ while True:
 
             for buy in buy_list:
                 current_price = pyupbit.get_current_price(buy[0])
-                if(buy[1]*0.98 > current_price):
+                if(buy[1]*buydown_percent > current_price):
                     buy_result = upbit.buy_market_order(buy[0], invest_money)
                     post_message(myToken,"#upbit", buy[0]+"coin buy : " +str(buy_result))
                     
@@ -390,11 +390,41 @@ while True:
         if(sell_list != []):
             for sell_symbol in sell_list:
                 current_price = pyupbit.get_current_price(sell_symbol[0])
-
+                
                 #손절
                 if(sell_symbol[1]*deadsell_percent > current_price):
                     sell_result = upbit.sell_market_order(sell_symbol[0], sell_symbol[2])
                     post_message(myToken,"#upbit", sell_symbol[0]+"coin dead sell : " +str(sell_result))
+                
+                
+                
+                #애매한 익절목표
+                #wantgood_sell_list 중복체크
+                want_overlap_test = True
+                if([] != wantgood_sell_list):
+                    for i in wantgood_sell_list:
+                        if(i == sell_symbol[0]):
+                            wnat_overlap_test = False                
+                #aftergoodcell_percent퍼 떨어지면 wantgood리스트에 보관 후에 3퍼이상일때 매도
+                if(want_overlap_test and sell_symbol[1]*0.98>current_price):
+                    wantgood_sell_list.append(sell_symbol[0])
+
+                #good_sell_list에 있는 코인을 익절조건 테스트
+                if([] != wantgood_sell_list):
+                    for wantgood_sell in wantgood_sell_list:
+                        if(wantgood_sell == sell_symbol[0]):
+                            if(current_price > sell_symbol[1]*1.03):
+                                sell_result = upbit.sell_market_order(sell_symbol[0], sell_symbol[2])
+                                post_message(myToken,"#upbit", sell_symbol[0]+"coin wantgood sell : " +str(sell_result))
+                                
+                                #wantgood_sell_list에 있는 코인을 제거해줌
+                                contem = 999
+                                for i in range(len(wantgood_sell_list)):
+                                    if(wantgood_sell_list[i] == sell_symbol[0]):
+                                        contem = i
+                                if(contem != 999):
+                                    del wantgood_sell_list[contem]           
+
 
 
 
@@ -425,7 +455,7 @@ while True:
                                 most_high = df.iloc[1]['close'] #하루전 종가
 
                             #current_price와 most_high를 비교해서 매도
-                            if(most_high *0.98 >current_price):
+                            if(most_high *aftergoodsell_percent >current_price):
                                 sell_result = upbit.sell_market_order(sell_symbol[0], sell_symbol[2])
                                 post_message(myToken,"#upbit", sell_symbol[0]+"coin good sell : " +str(sell_result))
 
@@ -439,7 +469,7 @@ while True:
 
 
                  
-        time.sleep(8)
+        time.sleep(2)
 
     except Exception as e:
         print(e)
